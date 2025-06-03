@@ -1,8 +1,8 @@
+import type { RequestHandler } from "express";
 // Import access to data
 import programRepository from "./programRepository";
 
 // Some data to make the trick
-
 const programs = [
   {
     id: 1,
@@ -28,17 +28,13 @@ const programs = [
 
 // Declare the actions
 
-import type { RequestHandler } from "express";
-
 const browse: RequestHandler = async (req, res) => {
-  const programsFromDB = await programRepository.readAll();
-
-  res.json(programsFromDB);
+  const program = await programRepository.readAll();
+  res.json(program);
 };
 
 const read: RequestHandler = (req, res) => {
   const parsedId = Number.parseInt(req.params.id);
-
   const program = programs.find((p) => p.id === parsedId);
 
   if (program != null) {
@@ -48,6 +44,54 @@ const read: RequestHandler = (req, res) => {
   }
 };
 
+const add: RequestHandler = async (req, res, next) => {
+  try {
+    const newProgram = {
+      title: req.body.title,
+    };
+
+    const insertId = await programRepository.create(newProgram);
+    res.status(201).json({ insertId });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const destroy: RequestHandler = async (req, res, next) => {
+  try {
+    const programId = Number(req.params.id);
+    await programRepository.delete(programId);
+    res.sendStatus(204);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const edit: RequestHandler = async (req, res, next) => {
+  try {
+    const program = {
+      id: Number(req.params.id),
+      name: req.body.name,
+    };
+
+    const affectedRows = await programRepository.update(program);
+
+    if (affectedRows === 0) {
+      res.sendStatus(404);
+    } else {
+      res.sendStatus(204);
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Export them to import them somewhere else
 
-export default { browse, read };
+export default {
+  browse,
+  read,
+  add,
+  edit,
+  destroy,
+};
